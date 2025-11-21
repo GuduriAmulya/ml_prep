@@ -856,3 +856,86 @@ sudo docker build -t myweb .
 sudo docker run -d -p 80:80 myweb
 sudo docker ps
 sudo docker stop <container ID>
+
+
+
+
+
+
+
+
+
+properties([
+    pipelineTriggers([
+        [$class: 'GitHubPushTrigger']
+    ])
+])
+
+pipeline {
+    agent any
+
+    tools {
+        maven 'MAVEN_HOME'
+    }
+
+    stages {
+
+        stage('Checkout') {
+            steps {
+                checkout([
+                    $class: 'GitSCM',
+                    branches: [[name: '*/main']],
+                    userRemoteConfigs: [[
+                        url: 'https://github.com/keerthanag3106/cms.git'
+                    ]]
+                ])
+            }
+        }
+
+        stage('clean') {
+            steps {
+                bat "mvn clean"
+            }
+        }
+
+        stage('install') {
+            steps {
+                bat "mvn install"
+            }
+        }
+
+        stage('test') {
+            steps {
+                bat "mvn test"
+            }
+        }
+
+        stage('package') {
+            steps {
+                bat "mvn package"
+            }
+        }
+
+        stage('Deploy') {
+            steps {
+                deploy adapters: [tomcat9(credentialsId: 'tomcat-admin', url: 'http://localhost:8085')],
+                       contextPath: 'CMS',
+                       war: 'target/CMS.war'
+            }
+        }
+    }
+}
+
+
+
+
+
+
+
+
+
+<role rolename="manager-gui"/>
+  <role rolename="manager-script"/>
+  <user username="admin" password="1234" roles="manager-gui,manager-script"/>
+
+
